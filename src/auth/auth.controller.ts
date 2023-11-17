@@ -3,18 +3,18 @@ import { Controller, Inject } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Mongoose } from 'mongoose';
-import { Hero, HeroById } from 'src/interfaces/hero.interface';
-import { Credentials, GuardResponse, Token, TokenResponse } from 'src/interfaces/auth.interface';
+import { Credentials, GuardResponse, SignupRequest, SignupResponse, Token, TokenResponse, VerificationRequest, VerificationResponse, } from 'src/interfaces/auth.interface';
 import { User } from 'src/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ExceptionMessage, HttpStatusMessage, SuccessMessage } from '../interfaces/enum'
+import { ExceptionMessage, HttpStatusMessage, MSG, SuccessMessage } from '../interfaces/enum'
 import { CustomException } from 'src/utils/exception.util';
 import { Session } from 'src/schemas/session.schema';
 import { jwtConstants } from 'src/constants/constant';
 import { Types } from 'mongoose';
+import { MailerService } from '@nestjs-modules/mailer';
 
 
 @Controller('auth')
@@ -22,29 +22,77 @@ export class AuthController {
 
     constructor(
         private jwtService: JwtService,
+        private readonly mailerService: MailerService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         @InjectModel(User.name) private UserModel: Model<User>,
         @InjectModel(Session.name) private SessionModel: Model<Session>,
     ) { }
 
-    @GrpcMethod('HeroesService', 'FindOne')
-    findOne(data: HeroById, metadata: Metadata, call: ServerUnaryCall<any, any>): Hero {
-        console.log("hii 2")
-        const items = [
-            { id: 1, name: 'John' },
-            { id: 2, name: 'Doe' },
-        ];
-        return items.find(({ id }) => id === data.id);
+
+    @GrpcMethod('AuthService', 'Signup')
+    async signup(payload: SignupRequest): Promise<SignupResponse> {
+        try {
+            const existingUser = await this.UserModel.findOne({ email: payload.email })
+            if (existingUser) {
+                return { message: ExceptionMessage.USER_ALREADY_EXIST, status: HttpStatusMessage.CONFLICT };
+            }
+
+            const OTP = Math.floor(1000 + Math.random() * 9000);
+
+            await this.cacheManager.set(`${OTP}`, payload.email, 300000)
+
+            await this.cacheManager.set(
+                `${payload.email}+${OTP}`,
+                payload,
+                300000
+            );
+
+            const mailOptions = {
+                to: payload.email,
+                subject: MSG.VERIFICATION_OTP,
+                text: MSG.USER_REGISTER + OTP,
+            };
+
+            await this.mailerService.sendMail(mailOptions);
+
+            return { message: SuccessMessage.USER_REGISTRATION_MAIL, status: HttpStatusMessage.OK };
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
+    @GrpcMethod('AuthService', 'SignupVerification')
+    async signupVerification(payload: VerificationRequest): Promise<VerificationResponse> {
+        try {
+            const email = await this.cacheManager.get(payload.otp);
+
+            if (email == null) {
+                return { message: ExceptionMessage.INCORRECT_OTP, status: HttpStatusMessage.BAD_REQUEST };
+
+            }
+            const userData = await this.cacheManager.get(`${email}+${payload.otp}`);
+
+            userData['password'] = await bcrypt.hash(userData['password'], 10);
+            const createdUser = new this.UserModel(userData);
+            createdUser.save();
+
+            return { message: SuccessMessage.USER_SIGNUP_SUCCESS, status: HttpStatusMessage.CREATED };
+
+
+        } catch (error) {
+            throw error;
+        }
     }
 
 
     @GrpcMethod('AuthService', 'GetToken')
-    async getToken(payload: Credentials, metadata: Metadata, call: ServerUnaryCall<any, any>): Promise<TokenResponse> {
+    async getToken(payload: Credentials): Promise<TokenResponse> {
         try {
             const email = payload.email;
 
             const user = await this.UserModel.findOne({ email });
-            console.log("id :", user._id)
 
             if (user) {
                 const isMatch = await bcrypt.compare(payload.password, user.password);
@@ -53,9 +101,9 @@ export class AuthController {
                     return { message: ExceptionMessage.INVALID_PASSWORD, status: HttpStatusMessage.BAD_GATEWAY, token: "" };
                 }
                 let redisSession = await this.cacheManager.get(`${user._id}`);
-                console.log("red: ", redisSession)
+
                 if (!redisSession) {
-                    console.log("hii 11")
+
                     let dataSession = await this.SessionModel.findOne(
                         {
                             userId: user._id,
@@ -65,14 +113,13 @@ export class AuthController {
                         {}
                     );
                     if (!(dataSession == null)) {
-                        console.log("hii 22")
 
                         await this.cacheManager.set(
                             `${user._id}`,
                             `${payload.deviceId}`,
                         );
                     } else {
-                        console.log("hii 33")
+
                         let deviceId = payload.deviceId;
                         await this.SessionModel.updateMany(
                             {
@@ -98,7 +145,6 @@ export class AuthController {
                         );
                     }
                 } else if (redisSession != payload.deviceId) {
-                    console.log("hii 44")
                     let deviceId = payload.deviceId;
                     await this.SessionModel.updateMany(
                         {
@@ -139,9 +185,8 @@ export class AuthController {
 
 
     @GrpcMethod('AuthService', 'Guard')
-    async guard(payload: Token, metadata: Metadata, call: ServerUnaryCall<any, any>): Promise<GuardResponse> {
+    async guard(payload: Token): Promise<GuardResponse> {
         try {
-            console.log("hii 1")
             const token = payload.token;
             const decodeData = await this.jwtService.verifyAsync(
                 token,
@@ -149,12 +194,10 @@ export class AuthController {
                     secret: jwtConstants.secret
                 }
             );
-            console.log("dec: ", decodeData)
 
             let redisSessionData = await this.cacheManager.get(decodeData.sub)
 
             if (redisSessionData == decodeData.deviceId) {
-                console.log("hii 2")
 
                 return { valid: true, userId: decodeData.sub, role: decodeData.role };
 
@@ -166,24 +209,19 @@ export class AuthController {
                 }, { _id: 1 })
                 if (sessionData) {
                     await this.cacheManager.set(decodeData.sub, decodeData.deviceId);
-                    console.log("hii 3")
 
                     return { valid: true, userId: decodeData.sub, role: decodeData.role };
 
                 } else {
-                    console.log("hii 4")
-
-
-                    return { valid: false, userId: null , role:null};
-                    // throw new CustomException(ExceptionMessage.UNAUTHORIZED, HttpStatusMessage.UNAUTHORIZED)
+                    return { valid: false, userId: null, role: null };
                 }
 
             }
         }
         catch (error) {
-            console.log("hii 5")
             return { valid: false, userId: null, role: null };
         }
     }
+
 
 }

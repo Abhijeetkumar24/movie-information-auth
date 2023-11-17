@@ -1,3 +1,24 @@
+export interface SignupRequest {
+    name: string;
+    email: string;
+    password: string;
+    role: [string];
+    notification: string;
+}
+
+export interface SignupResponse {
+    message: string;
+    status: string;
+}
+
+export interface VerificationRequest {
+    otp: string;
+}
+
+export interface VerificationResponse{
+    message: string;
+    status: string;
+}
 export interface Credentials {
     email: string
     password: string;
@@ -19,3 +40,4 @@ export interface GuardResponse {
     userId: string;
     role: string
 }
+

@@ -5,9 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
-// import * as redisStore from 'cache-manager-redis-store';
-import type { RedisClientOptions } from 'redis';
-import { redisStore } from 'cache-manager-redis-yet';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './constants/constant';
 
@@ -17,11 +14,11 @@ import { jwtConstants } from './constants/constant';
   imports: [
     AuthModule,
 
-    MongooseModule.forRoot('mongodb+srv://Abhijeet:abhijeet@cluster0.dh4tila.mongodb.net/sample_mflix'),
+    MongooseModule.forRoot('mongodb+srv://Abhijeet:abhijeet@cluster0.dh4tila.mongodb.net/movie_info_user'),
 
     CacheModule.register({ isGlobal: true }),
 
-    JwtModule.register({            // registering out jwt constants as global
+    JwtModule.register({            
       global: true,
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '30m' },

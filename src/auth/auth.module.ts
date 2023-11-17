@@ -6,6 +6,7 @@ import { jwtConstants } from 'src/constants/constant';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { Session, SessionSchema } from 'src/schemas/session.schema';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
@@ -16,6 +17,21 @@ import { Session, SessionSchema } from 'src/schemas/session.schema';
         { name: Session.name, schema: SessionSchema }
       ]
     ),
+
+    MailerModule.forRootAsync({
+      useFactory: () => ({
+        transport: {
+          host: 'smtp.gmail.com',
+          auth: {
+            
+            user: process.env.GMAIL,
+            pass: process.env.GMAIL_APP_PASSWORD,
+
+          },
+        },
+      }),
+    }),
+
   ],
   controllers: [AuthController],
   providers: [AuthService]
