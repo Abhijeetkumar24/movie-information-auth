@@ -1,6 +1,6 @@
 import { Metadata, ServerUnaryCall } from '@grpc/grpc-js';
-import { Controller, Inject } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { Controller, Inject, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ClientKafka, GrpcMethod, Transport, Client } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Mongoose } from 'mongoose';
 import { Credentials, GuardResponse, SignupRequest, SignupResponse, Token, TokenResponse, VerificationRequest, VerificationResponse, } from 'src/interfaces/auth.interface';
@@ -77,7 +77,7 @@ export class AuthController {
             userData['password'] = await bcrypt.hash(userData['password'], 10);
             const createdUser = new this.UserModel(userData);
             createdUser.save();
-
+           
             return { message: SuccessMessage.USER_SIGNUP_SUCCESS, status: HttpStatusMessage.CREATED };
 
 
