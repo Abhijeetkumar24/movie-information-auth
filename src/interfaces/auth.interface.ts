@@ -41,3 +41,11 @@ export interface GuardResponse {
     role: string
 }
 
+export interface LogoutRequest {
+    token: string;
+}
+
+export interface LogoutResponse {
+    message: string;
+    status: string;
+}

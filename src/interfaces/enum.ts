@@ -79,6 +79,8 @@ export enum HttpStatusMessage {
 }
 
 
+
+
 export enum ExceptionMessage {
 
 
@@ -100,14 +102,17 @@ export enum ExceptionMessage {
     INVALID_PASSWORD = "INVALID_PASSWORD",
     UNAUTHORIZED = "UNAUTHORIZED",
     TOKEN_EXPIRES = "Token expires",
-
+    USER_LOGOUT_ERROR = "USER_LOGOUT_ERROR"
 }
+
+
 
 
 export enum SuccessMessage {
     USER_REGISTRATION_MAIL = "OTP Send to entered email address",
     USER_SIGNUP_SUCCESS = "User signup successfully",
     USER_LOGIN_SUCCESS = "User login successfully",
+    USER_LOGOUT_SUCCESS = "USER_LOGOUT_SUCCESS"
 }
 
 
