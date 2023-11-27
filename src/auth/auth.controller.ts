@@ -3,7 +3,7 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod,  } from '@nestjs/microservices';
 import { Credentials, GuardResponse, LogoutRequest, LogoutResponse, SignupRequest, SignupResponse, Token, TokenResponse, VerificationRequest, VerificationResponse, } from 'src/interfaces/auth.interface';
 import { AuthService } from './auth.service';
-import { HttpStatusMessage, SuccessMessage } from 'src/interfaces/enum';
+
 
 
 @Controller('auth')

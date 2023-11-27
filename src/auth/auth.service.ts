@@ -10,8 +10,6 @@ import { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
 import { Session } from 'src/schemas/session.schema';
 import { JwtService } from '@nestjs/jwt';
-import { jwtConstants } from 'src/constants/constant';
-
 
 
 @Injectable()
@@ -153,7 +151,7 @@ export class AuthService {
         try {
             const token = payload.token;
             const decodeData = await this.jwtService.verifyAsync(token, {
-                secret: jwtConstants.secret,
+                secret: process.env.JWT_SECRET,
             });
 
             let redisSessionData = await this.cacheManager.get(decodeData.sub);
@@ -188,7 +186,7 @@ export class AuthService {
 
             const token = payload.token;
             const decodeData = await this.jwtService.verifyAsync(token, {
-                secret: jwtConstants.secret,
+                secret: process.env.JWT_SECRET,
             });
 
             const data = await this.SessionModel.updateOne(

@@ -6,12 +6,13 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtConstants } from './constants/constant';
-
 
 
 @Module({
   imports: [
+
+    ConfigModule.forRoot({}),
+
     AuthModule,
 
     MongooseModule.forRootAsync({
@@ -24,12 +25,8 @@ import { jwtConstants } from './constants/constant';
 
     JwtModule.register({            
       global: true,
-      secret: jwtConstants.secret,
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '30m' },
-    }),
-
-    ConfigModule.forRoot({
-      isGlobal: true,
     }),
 
   ],
