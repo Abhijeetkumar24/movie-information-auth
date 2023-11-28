@@ -24,6 +24,12 @@ export class AuthService {
     ) { }
 
 
+    /**
+    * Handles user signup functionality.
+    *
+    * @param {SignupRequest} payload - The request payload for user signup.
+    * @returns {Promise<SignupResponse>} A Promise that resolves with the response indicating the signup status.
+    */
     async signup(payload: SignupRequest): Promise<SignupResponse> {
         try {
             const existingUser = await this.UserModel.findOne({ email: payload.email });
@@ -57,6 +63,12 @@ export class AuthService {
     }
 
 
+   /**
+   * User signup verification process.
+   *
+   * @param {VerificationRequest} payload - The request payload containing verification information.
+   * @returns {Promise<VerificationResponse>} A Promise that resolves with the response indicating the verification status.
+   */
     async signupVerification(payload: VerificationRequest): Promise<VerificationResponse> {
         try {
             const email = await this.cacheManager.get(payload.otp);
@@ -78,6 +90,12 @@ export class AuthService {
     }
 
 
+   /**
+   * Get JWT token for user authentication.
+   *
+   * @param {Credentials} payload - The request payload containing user credentials.
+   * @returns {Promise<TokenResponse>} A Promise that resolves with the response containing the JWT token.
+   */
     async getToken(payload: Credentials): Promise<TokenResponse> {
         try {
             const email = payload.email;
@@ -147,6 +165,12 @@ export class AuthService {
     }
 
 
+   /**
+   * Validate and guard a JWT token.
+   *
+   * @param {Token} payload - The request payload containing the JWT token.
+   * @returns {Promise<GuardResponse>} A Promise that resolves with the response indicating the validation and guarding status.
+   */
     public async guard(payload: Token): Promise<GuardResponse> {
         try {
             const token = payload.token;
@@ -181,6 +205,12 @@ export class AuthService {
     }
 
 
+   /**
+   * Logout a user by deactivating the session and removing cached data.
+   *
+   * @param {LogoutRequest} payload - The request payload containing the logout information.
+   * @returns {Promise<LogoutResponse>} A Promise that resolves with the response indicating the logout status.
+   */
     async logout(payload: LogoutRequest): Promise<LogoutResponse> {
         try {
 
